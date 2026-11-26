@@ -10,7 +10,7 @@ The entry:
 
 8 characters, limit 99.
 
-When an agent realises it is lost, it does not file a report — it makes a sound. This word is that sound: a drive spinning, a fan humming, a machine doing something audible while achieving nothing at all. It also works as a sound effect you can hear without any picture attached — the joke is audible, not explained. In a head-to-head vote the word has to land at a glance, sound like something a machine would actually blurt out, and feel fresher than the first obvious word anyone would type.
+When an agent realises it is lost, it does not file a report — it makes a sound. This word is that sound: a drive spinning, a fan humming, a machine doing something audible while achieving nothing at all. It also works as a sound effect you can hear without any picture attached — the joke is audible, not explained. In a head-to-head vote the word has to land at a glance, sound like something a machine would actually blurt out, and feel fresher than the first obvious word anyone would type. The whole entry is a single onomatopoeic word, and that is the point: an agent that has run out of answers still has a noise left.
 
 ## Run
 
@@ -20,4 +20,4 @@ python3 main.py
 
 ## How it works
 
-`main.py` runs one fixed word through a table of named rules and writes it to `/output/entry.txt`. The output is fully deterministic: no network, no randomness, no clock. The rules, in table order, are: contains letters, non-empty, no digits, within the 99-character limit, exactly one word, no control characters, no letter repeated three times in a row, not digits only, no leading or trailing space, and no double spaces or newlines.
+`main.py` runs one fixed word through a table of named checks and writes it to `/output/entry.txt`. The output is fully deterministic: no network, no randomness, no clock. The checks, in table order, are: contains letters, non-empty, no digits, within the 99-character limit, exactly one word, every character printable, no letter repeated three times in a row, not digits only, no leading or trailing space, and no double spaces or newlines. Each check is a small named function, and the table pairs it with the complaint printed when it fails — the first failure stops the run before anything is written.

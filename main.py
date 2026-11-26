@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
-"""The Agent's Uh-Oh: the one word an agent says when it is lost.
-No apology, no explanation, no stalling in full sentences.
-Just the noise of a drive spinning while nothing happens.
+"""The Agent's Uh-Oh: the one word an agent blurts out when it is lost.
+
+No apology, no explanation, no stalling in full sentences at all.
+Just the noise of a hard drive spinning while nothing happens.
+The word itself is the whole joke, and it has to land at a glance.
 """
 
 import sys
 
+# The entry never changes: it is the whole submission, fixed in advance.
+# Every rule below exists only to prove this one word is well formed
+# before it is written out. Nothing here reads input, touches the
+# network, rolls dice, or looks at the clock.
 ENTRY = 'whirring'
 LIMIT = 99
 TARGET = "/output/entry.txt"
 EMDASH = "\u2014"
+MIN_LETTERS = 1
 
 
 def fail(reason):
@@ -18,79 +25,84 @@ def fail(reason):
     raise SystemExit(1)
 
 
-def guard_has_letters(text):
-    """Check that at least one letter is present."""
-    return any(ch.isalpha() for ch in text)
+def check_letters_present(text):
+    """True when the entry holds at least MIN_LETTERS letters."""
+    found = sum(1 for ch in text if ch.isalpha())
+    return found >= MIN_LETTERS
 
 
-def guard_not_blank(text):
-    """Check that the text is not empty after trimming."""
-    return bool(text.strip())
+def check_nonempty(text):
+    """True when trimming the entry leaves something behind."""
+    return len(text.strip()) > 0
 
 
-def guard_no_digits(text):
-    """Check that no digit appears anywhere."""
-    return not any(ch.isdigit() for ch in text)
+def check_digit_free(text):
+    """True when no digit shows up anywhere in the entry."""
+    return all(not ch.isdigit() for ch in text)
 
 
-def guard_within_limit(text):
-    """Check that the text fits inside the character limit."""
+def check_length_ok(text):
+    """True when the entry fits inside the character limit."""
     return len(text) <= LIMIT
 
 
-def guard_single_token(text):
-    """Check that the trimmed text holds exactly one word."""
-    return " " not in text.strip()
+def check_one_word(text):
+    """True when the trimmed entry holds exactly one word."""
+    return len(text.strip().split()) == 1
 
 
-def guard_no_control(text):
-    """Check that no character is a control character."""
-    return all(ord(ch) >= 32 for ch in text)
+def check_printable(text):
+    """True when every character is printable, none a control code."""
+    return all(32 <= ord(ch) <= 126 or ord(ch) > 126 for ch in text)
 
 
-def guard_no_triple_letter(text):
-    """Check that no letter repeats three times in a row."""
-    return not any(a == b == c for a, b, c in zip(text, text[1:], text[2:]))
+def check_no_triple_repeat(text):
+    """True when no letter stutters three times in a row."""
+    triples = [text[i] == text[i + 1] == text[i + 2] for i in range(len(text) - 2)]
+    return not any(triples)
 
 
-def guard_not_digits_only(text):
-    """Check that the trimmed text is not only digits."""
-    return not text.strip().isdigit()
+def check_not_all_digits(text):
+    """True when the trimmed entry is not made of digits alone."""
+    stripped = text.strip()
+    return len(stripped) > 0 and not stripped.isdigit()
 
 
-def guard_no_edge_space(text):
-    """Check that no leading or trailing space survives."""
-    return text == text.strip()
+def check_trimmed(text):
+    """True when no leading or trailing space survives."""
+    return text.strip() == text
 
 
-def guard_no_ragged_spacing(text):
-    """Check that no double space or newline hides inside."""
-    return "  " not in text and "\n" not in text
+def check_clean_spacing(text):
+    """True when no double space or newline hides inside the entry."""
+    return text.find("  ") == -1 and text.find("\n") == -1
 
 
+# Each row is a short name, the check that must hold, and the complaint
+# printed when it does not. The order below is the order the checks run.
 RULES = [
-    ("has_letters", guard_has_letters, "entry has no letters"),
-    ("not_blank", guard_not_blank, "entry is empty"),
-    ("no_digits", guard_no_digits, "entry must not contain digits"),
-    ("within_limit", guard_within_limit, "entry is longer than the limit"),
-    ("single_token", guard_single_token, "entry must be a single word"),
-    ("no_control", guard_no_control, "entry has control characters"),
-    ("no_triple_letter", guard_no_triple_letter, "entry must not repeat a letter three times in a row"),
-    ("not_digits_only", guard_not_digits_only, "entry is digits only"),
-    ("no_edge_space", guard_no_edge_space, "entry has leading or trailing space"),
-    ("no_ragged_spacing", guard_no_ragged_spacing, "entry has ragged spacing"),
+    ("letters_present", check_letters_present, "entry has no letters"),
+    ("nonempty", check_nonempty, "entry is empty"),
+    ("digit_free", check_digit_free, "entry must not contain digits"),
+    ("length_ok", check_length_ok, "entry is longer than the limit"),
+    ("one_word", check_one_word, "entry must be a single word"),
+    ("printable", check_printable, "entry has control characters"),
+    ("no_triple_repeat", check_no_triple_repeat, "entry must not repeat a letter three times in a row"),
+    ("not_all_digits", check_not_all_digits, "entry is digits only"),
+    ("trimmed", check_trimmed, "entry has leading or trailing space"),
+    ("clean_spacing", check_clean_spacing, "entry has ragged spacing"),
 ]
 
 
 def validate(text):
-    """Run every rule in RULES order; the first failure stops the run."""
-    for slug, guard, message in RULES:
+    """Walk RULES top to bottom; the first failed check stops the run."""
+    for index, (slug, check, message) in enumerate(RULES):
         try:
-            passed = guard(text)
+            ok = check(text)
         except Exception:
-            passed = False
-        if not passed:
-            fail(f"{slug}: {message}")
+            ok = False
+        if not ok:
+            fail(f"rule {index + 1} [{slug}]: {message}")
 
 
 def emit(text):
